@@ -7,49 +7,118 @@ import (
 	"net/http"
 )
 
-func test1() {
-	// Fetch and unmarshal relations (DatesLocations)
-	RelationResponse, err := http.Get(Apis.Relation)
-	if err != nil {
-		fmt.Println("Error fetching relations:", err)
-		return
-	}
-	defer RelationResponse.Body.Close()
-	RelationData, err := io.ReadAll(RelationResponse.Body)
-	if err != nil {
-		fmt.Println("Error reading relations data:", err)
-		return
-	}
-	json.Unmarshal(RelationData, &Relations)
+// Artist represents the structure for each artist with additional info like dates and locations
+type Artist struct {
+	ID                       int      `json:"id"`
+	Name                     string   `json:"name"`
+	Image                    string   `json:"image"`
+	Members                  []string `json:"members"`
+	CreationDate             string   `json:"creationDate"`
+	FirstAlbum               string   `json:"firstAlbum"`
+	LocationsApi             string   `json:"locations"`
+	DatesApi                 string   `json:"concertDates"`
+	RelationsApi             string   `json:"relations"`
+	Relations                map[string][]string
+	OtherLocationsInfos      OtherLocationsInfo
+	OtherDatesInfos          OtherDatesInfo
+	OtherDatesLocationsInfos OtherDatesLocationsInfo
 }
 
-// Link DatesLocations to the respective artist
-	// for i := range Artists {
+// OtherInfo holds extra details like locations and dates for each artist
+type OtherLocationsInfo struct {
+	Locations []string `json:"locations"`
+}
+type OtherDatesInfo struct {
+	Dates []string `json:"dates"`
+}
+type OtherDatesLocationsInfo struct {
+	DatesLocations map[string][]string `json:"datesLocations"`
+}
 
-	// 	if Artists[i].ID == Relations[i].ID {
-	// 		Artists[i].DatesLocations = Relations[i].DatesLocations
-	// 	}
-	// 	if Artists[i].ID == Dates[i].ID {
-	// 		Artists[i].Dates = Dates[i].Dates
-	// 	}
-	// 	if Artists[i].ID == Locations[i].ID {
-	// 		Artists[i].Locations = Locations[i].Locations
-	// 	}
+// Artists stores all artist data fetched from the API
+var Artists []Artist
 
-	// }
+// FetchArtists retrieves the list of artists from the API
+func FetchArtists() {
+	response, err := http.Get("https://groupietrackers.herokuapp.com/api/artists")
+	if err != nil {
+		fmt.Println("Error fetching artists:", err)
+		return
+	}
+	defer response.Body.Close()
 
-func test2() {
-	// Fetch and unmarshal dates
-	DatesResponse, err := http.Get(Apis.Dates)
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println("Error reading artists data:", err)
+		return
+	}
+
+	// Unmarshal the JSON data into the Artists slice
+	if err := json.Unmarshal(data, &Artists); err != nil {
+		fmt.Println("Error unmarshalling artists data:", err)
+	}
+}
+
+// FetchLocations retrieves the location data for the artist
+func (ar *Artist) FetchLocations() {
+	response, err := http.Get(ar.LocationsApi)
+	if err != nil {
+		fmt.Println("Error fetching locations:", err)
+		return
+	}
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println("Error reading locations data:", err)
+		return
+	}
+
+	// Unmarshal the JSON data into the artist's OtherInfo
+	if err := json.Unmarshal(data, &ar.OtherLocationsInfos); err != nil {
+		fmt.Println("Error unmarshalling locations data:", err)
+	}
+}
+
+// FetchDates retrieves the concert dates data for the artist
+func (ar *Artist) FetchDates() {
+	response, err := http.Get(ar.DatesApi)
 	if err != nil {
 		fmt.Println("Error fetching dates:", err)
 		return
 	}
-	defer DatesResponse.Body.Close()
-	DatesData, err := io.ReadAll(DatesResponse.Body)
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		fmt.Println("Error reading dates data:", err)
 		return
 	}
-	json.Unmarshal(DatesData, &Dates)
+
+	// Unmarshal the JSON data into the artist's OtherInfo
+	if err := json.Unmarshal(data, &ar.OtherDatesInfos); err != nil {
+		fmt.Println("Error unmarshalling dates data:", err)
+	}
+}
+
+// FetchRelations retrieves the relations data (dates and locations combined) for the artist
+func (ar *Artist) FetchRelations() {
+	response, err := http.Get(ar.RelationsApi)
+	if err != nil {
+		fmt.Println("Error fetching relations:", err)
+		return
+	}
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println("Error reading relations data:", err)
+		return
+	}
+
+	// Unmarshal the JSON data into the artist's DatesLocations map
+	if err := json.Unmarshal(data, &ar.OtherDatesLocationsInfos); err != nil {
+		fmt.Println("Error unmarshalling relations data:", err)
+	}
+	
 }
