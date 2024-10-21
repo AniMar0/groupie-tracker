@@ -13,11 +13,13 @@ type Artist struct {
 	Name                     string   `json:"name"`
 	Image                    string   `json:"image"`
 	Members                  []string `json:"members"`
-	CreationDate             string   `json:"creationDate"`
+	CreationDate             int      `json:"creationDate"`
 	FirstAlbum               string   `json:"firstAlbum"`
 	LocationsApi             string   `json:"locations"`
 	DatesApi                 string   `json:"concertDates"`
 	RelationsApi             string   `json:"relations"`
+	Locations                []string
+	Dates                    []string
 	Relations                map[string][]string
 	OtherLocationsInfos      OtherLocationsInfo
 	OtherDatesInfos          OtherDatesInfo
@@ -78,6 +80,7 @@ func (ar *Artist) FetchLocations() {
 	if err := json.Unmarshal(data, &ar.OtherLocationsInfos); err != nil {
 		fmt.Println("Error unmarshalling locations data:", err)
 	}
+	ar.Locations = ar.OtherLocationsInfos.Locations
 }
 
 // FetchDates retrieves the concert dates data for the artist
@@ -99,6 +102,7 @@ func (ar *Artist) FetchDates() {
 	if err := json.Unmarshal(data, &ar.OtherDatesInfos); err != nil {
 		fmt.Println("Error unmarshalling dates data:", err)
 	}
+	ar.Dates = ar.OtherDatesInfos.Dates
 }
 
 // FetchRelations retrieves the relations data (dates and locations combined) for the artist
@@ -120,5 +124,5 @@ func (ar *Artist) FetchRelations() {
 	if err := json.Unmarshal(data, &ar.OtherDatesLocationsInfos); err != nil {
 		fmt.Println("Error unmarshalling relations data:", err)
 	}
-	
+	ar.Relations = ar.OtherDatesLocationsInfos.DatesLocations
 }

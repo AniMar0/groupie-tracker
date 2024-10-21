@@ -36,6 +36,32 @@ func (serv *Server) cssHandler(Writer http.ResponseWriter, Request *http.Request
 	http.StripPrefix("/css/", fileCssServe).ServeHTTP(Writer, Request)
 }
 
+func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Request) {
+	if Request.Method == "GET" {
+
+		t, err := template.ParseFiles("templates/profile.html")
+		if err != nil {
+			http.Error(Writer, "500: internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		ID := string(Request.URL.Path)[8:]
+
+		Artists[Atoi(ID)-1].FetchDates()
+		Artists[Atoi(ID)-1].FetchLocations()
+		Artists[Atoi(ID)-1].FetchRelations()
+
+		if err := t.Execute(Writer, Artists[Atoi(ID)-1]); err != nil {
+			t, _ = template.ParseFiles("templates/error.html")
+			t.Execute(Writer, http.StatusNotFound)
+			return
+		}
+
+	} else {
+		http.Error(Writer, "400: bad request.", http.StatusBadRequest)
+	}
+}
+
 // func renderErrorPage(w http.ResponseWriter, errMsg string, errCode int) {
 // 	tmpl, tempErr := template.ParseFiles("templates/error.html")
 // 	if tempErr != nil {
@@ -46,30 +72,3 @@ func (serv *Server) cssHandler(Writer http.ResponseWriter, Request *http.Request
 // 	w.WriteHeader(errCode)
 // 	tmpl.Execute(w, Result)
 // }
-
-func (serv *Server) ArtistHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-
-		t, err := template.ParseFiles("templates/profile.html")
-		if err != nil {
-			http.Error(w, "500: internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		ID := string(r.URL.Path)[8:]
-
-		for i, v := range Artists {
-			if v.ID == Atoi(ID) {
-				Artists[i].Relations = Artists[i].OtherDatesLocationsInfos.DatesLocations
-				t.Execute(w, Artists[i])
-				return
-			}
-		}
-
-		t, _ = template.ParseFiles("templates/error.html")
-		t.Execute(w, http.StatusNotFound)
-		return
-	} else {
-		http.Error(w, "400: bad request.", http.StatusBadRequest)
-	}
-}
