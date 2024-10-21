@@ -45,7 +45,7 @@ func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Requ
 			return
 		}
 
-		ID := string(Request.URL.Path)[8:]
+		ID := string(Request.URL.Path)[len("/artist/"):]
 
 		Artists[Atoi(ID)-1].FetchDates()
 		Artists[Atoi(ID)-1].FetchLocations()
