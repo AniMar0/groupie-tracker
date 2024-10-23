@@ -3,6 +3,8 @@ package TRC
 import (
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -12,6 +14,7 @@ func (serv *Server) Run() {
 	FetchArtists()
 	http.HandleFunc("/css/", serv.cssHandler)
 	http.HandleFunc("/artist/", serv.ArtistHandler)
+	http.HandleFunc("/search", serv.SearchHandler)
 	http.HandleFunc("/", serv.homeHandler)
 
 	http.ListenAndServe(":8080", nil)
@@ -46,10 +49,11 @@ func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Requ
 		}
 
 		ID := string(Request.URL.Path)[len("/artist/"):]
-
-		Artists[Atoi(ID)-1].FetchDates()
-		Artists[Atoi(ID)-1].FetchLocations()
-		Artists[Atoi(ID)-1].FetchRelations()
+		if Atoi(ID) > 51 {
+			// err
+			return
+		}
+		Artists[Atoi(ID)-1].FetchOtherData()
 
 		if err := t.Execute(Writer, Artists[Atoi(ID)-1]); err != nil {
 			t, _ = template.ParseFiles("templates/error.html")
@@ -60,6 +64,50 @@ func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Requ
 	} else {
 		http.Error(Writer, "400: bad request.", http.StatusBadRequest)
 	}
+}
+
+func (serv *Server) SearchHandler(Writer http.ResponseWriter, Request *http.Request) {
+	var sArtists []Artist
+	temp, err := template.ParseFiles("templates/index.html")
+	if err != nil {
+		http.Error(Writer, "500: internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	Request.ParseForm()
+
+	searchWord := Request.FormValue("search")
+	searchWord = strings.ToLower(searchWord)
+
+	FetchLocations()
+
+	for id := range Artists {
+		if strings.Contains(strings.ToLower(Artists[id].Name), searchWord) {
+			sArtists = append(sArtists, Artists[id])
+			continue
+		} else if strings.Contains(strings.ToLower(Artists[id].FirstAlbum), searchWord) {
+			sArtists = append(sArtists, Artists[id])
+			continue
+		} else if strings.Contains(strconv.Itoa(Artists[id].CreationDate), searchWord) {
+			sArtists = append(sArtists, Artists[id])
+			continue
+		}
+
+		for membeId := range Artists[id].Members {
+			if strings.Contains(strings.ToLower(Artists[id].Members[membeId]), searchWord) {
+				sArtists = append(sArtists, Artists[id])
+				break
+			}
+		}
+
+		for locationId := range Location.Index[id].Locations {
+			if strings.Contains(strings.ToLower(Location.Index[id].Locations[locationId]), searchWord) {
+				sArtists = append(sArtists, Artists[id])
+				break
+			}
+		}
+	}
+	temp.Execute(Writer, sArtists)
 }
 
 // func renderErrorPage(w http.ResponseWriter, errMsg string, errCode int) {

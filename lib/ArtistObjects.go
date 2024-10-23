@@ -9,36 +9,40 @@ import (
 
 // Artist represents the structure for each artist with additional info like dates and locations
 type Artist struct {
-	ID                       int      `json:"id"`
-	Name                     string   `json:"name"`
-	Image                    string   `json:"image"`
-	Members                  []string `json:"members"`
-	CreationDate             int      `json:"creationDate"`
-	FirstAlbum               string   `json:"firstAlbum"`
-	LocationsApi             string   `json:"locations"`
-	DatesApi                 string   `json:"concertDates"`
-	RelationsApi             string   `json:"relations"`
-	Locations                []string
-	Dates                    []string
-	Relations                map[string][]string
-	OtherLocationsInfos      OtherLocationsInfo
-	OtherDatesInfos          OtherDatesInfo
-	OtherDatesLocationsInfos OtherDatesLocationsInfo
+	ID           int      `json:"id"`
+	Name         string   `json:"name"`
+	Image        string   `json:"image"`
+	Members      []string `json:"members"`
+	CreationDate int      `json:"creationDate"`
+	FirstAlbum   string   `json:"firstAlbum"`
+	LocationsApi string   `json:"locations"`
+	DatesApi     string   `json:"concertDates"`
+	RelationsApi string   `json:"relations"`
+	Locations    Locations
+	Dates        Dates
+	Relations    Relations
+}
+
+type LocationsData struct {
+	Index []Locations `json:"index"`
 }
 
 // OtherInfo holds extra details like locations and dates for each artist
-type OtherLocationsInfo struct {
+type Locations struct {
 	Locations []string `json:"locations"`
 }
-type OtherDatesInfo struct {
+type Dates struct {
 	Dates []string `json:"dates"`
 }
-type OtherDatesLocationsInfo struct {
+type Relations struct {
 	DatesLocations map[string][]string `json:"datesLocations"`
 }
 
 // Artists stores all artist data fetched from the API
-var Artists []Artist
+var (
+	Artists  []Artist
+	Location LocationsData
+)
 
 // FetchArtists retrieves the list of artists from the API
 func FetchArtists() {
@@ -61,6 +65,26 @@ func FetchArtists() {
 	}
 }
 
+func FetchLocations() {
+	response, err := http.Get("https://groupietrackers.herokuapp.com/api/locations")
+	if err != nil {
+		fmt.Println("Error fetching artists:", err)
+		return
+	}
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println("Error reading artists data:", err)
+		return
+	}
+
+	// Unmarshal the JSON data into the Artists slice
+	if err := json.Unmarshal(data, &Location); err != nil {
+		fmt.Println("Error unmarshalling artists data:", err)
+	}
+}
+
 // FetchLocations retrieves the location data for the artist
 func (ar *Artist) FetchLocations() {
 	response, err := http.Get(ar.LocationsApi)
@@ -77,10 +101,9 @@ func (ar *Artist) FetchLocations() {
 	}
 
 	// Unmarshal the JSON data into the artist's OtherInfo
-	if err := json.Unmarshal(data, &ar.OtherLocationsInfos); err != nil {
+	if err := json.Unmarshal(data, &ar.Locations); err != nil {
 		fmt.Println("Error unmarshalling locations data:", err)
 	}
-	ar.Locations = ar.OtherLocationsInfos.Locations
 }
 
 // FetchDates retrieves the concert dates data for the artist
@@ -99,10 +122,9 @@ func (ar *Artist) FetchDates() {
 	}
 
 	// Unmarshal the JSON data into the artist's OtherInfo
-	if err := json.Unmarshal(data, &ar.OtherDatesInfos); err != nil {
+	if err := json.Unmarshal(data, &ar.Dates); err != nil {
 		fmt.Println("Error unmarshalling dates data:", err)
 	}
-	ar.Dates = ar.OtherDatesInfos.Dates
 }
 
 // FetchRelations retrieves the relations data (dates and locations combined) for the artist
@@ -121,8 +143,13 @@ func (ar *Artist) FetchRelations() {
 	}
 
 	// Unmarshal the JSON data into the artist's DatesLocations map
-	if err := json.Unmarshal(data, &ar.OtherDatesLocationsInfos); err != nil {
+	if err := json.Unmarshal(data, &ar.Relations); err != nil {
 		fmt.Println("Error unmarshalling relations data:", err)
 	}
-	ar.Relations = ar.OtherDatesLocationsInfos.DatesLocations
+}
+
+func (a *Artist) FetchOtherData() {
+	a.FetchLocations()
+	a.FetchDates()
+	a.FetchRelations()
 }

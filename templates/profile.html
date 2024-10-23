@@ -21,6 +21,7 @@
     </div>
 
 
+    
 
 
     <div class="wrapper">
@@ -47,7 +48,7 @@
 
         <div class="concerts">
             <h3>Concerts:</h3>
-            {{range $key, $value := .Relations}}
+            {{range $key, $value := .Relations.DatesLocations}}
             <table>
                 <tr class="location">
                     <td><a href="#{{$key}}"><u>&#9660 {{$key}}</u></a></td>
