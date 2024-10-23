@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 // Artist represents the structure for each artist with additional info like dates and locations
@@ -107,4 +109,26 @@ func (a *Artist) FetchOtherData() {
 	a.FetchLocations()
 	a.FetchDates()
 	a.FetchRelations()
+}
+
+func (a *Artist) Search(searchWord string) *Artist {
+	if strings.Contains(strings.ToLower(a.Name), searchWord) ||
+		strings.Contains(strings.ToLower(a.FirstAlbum), searchWord) ||
+		strings.Contains(strconv.Itoa(a.CreationDate), searchWord) {
+		return a
+	}
+
+	for membeId := range a.Members {
+		if strings.Contains(strings.ToLower(a.Members[membeId]), searchWord) {
+			return a
+		}
+	}
+
+	for locationId := range Location.Index[a.ID-1].Locations {
+		if strings.Contains(strings.ToLower(Location.Index[a.ID-1].Locations[locationId]), searchWord) {
+			return a
+		}
+	}
+
+	return nil
 }

@@ -3,7 +3,6 @@ package TRC
 import (
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -68,7 +67,7 @@ func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Requ
 }
 
 func (serv *Server) SearchHandler(Writer http.ResponseWriter, Request *http.Request) {
-	if Request.Method == "GET" {
+	if Request.Method == "POST" {
 		var sArtists []Artist
 		temp, err := template.ParseFiles("templates/index.html")
 		if err != nil {
@@ -85,31 +84,11 @@ func (serv *Server) SearchHandler(Writer http.ResponseWriter, Request *http.Requ
 		}
 
 		for id := range Artists {
-			if strings.Contains(strings.ToLower(Artists[id].Name), searchWord) {
-				sArtists = append(sArtists, Artists[id])
-				continue
-			} else if strings.Contains(strings.ToLower(Artists[id].FirstAlbum), searchWord) {
-				sArtists = append(sArtists, Artists[id])
-				continue
-			} else if strings.Contains(strconv.Itoa(Artists[id].CreationDate), searchWord) {
-				sArtists = append(sArtists, Artists[id])
-				continue
-			}
-
-			for membeId := range Artists[id].Members {
-				if strings.Contains(strings.ToLower(Artists[id].Members[membeId]), searchWord) {
-					sArtists = append(sArtists, Artists[id])
-					break
-				}
-			}
-
-			for locationId := range Location.Index[id].Locations {
-				if strings.Contains(strings.ToLower(Location.Index[id].Locations[locationId]), searchWord) {
-					sArtists = append(sArtists, Artists[id])
-					break
-				}
+			if artist := Artists[id].Search(searchWord); artist != nil {
+				sArtists = append(sArtists, *artist)
 			}
 		}
+
 		temp.Execute(Writer, sArtists)
 
 	} else {
