@@ -12,6 +12,7 @@ type Server struct{}
 
 func (serv *Server) Run() {
 	FetchArtists()
+
 	http.HandleFunc("/css/", serv.cssHandler)
 	http.HandleFunc("/artist/", serv.ArtistHandler)
 	http.HandleFunc("/search", serv.SearchHandler)
@@ -49,7 +50,7 @@ func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Requ
 		}
 
 		ID := string(Request.URL.Path)[len("/artist/"):]
-		if Atoi(ID) > 51 {
+		if Atoi(ID) > len(Artists) {
 			// err
 			return
 		}
@@ -67,56 +68,51 @@ func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Requ
 }
 
 func (serv *Server) SearchHandler(Writer http.ResponseWriter, Request *http.Request) {
-	var sArtists []Artist
-	temp, err := template.ParseFiles("templates/index.html")
-	if err != nil {
-		http.Error(Writer, "500: internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	Request.ParseForm()
-
-	searchWord := Request.FormValue("search")
-	searchWord = strings.ToLower(searchWord)
-
-	FetchLocations()
-
-	for id := range Artists {
-		if strings.Contains(strings.ToLower(Artists[id].Name), searchWord) {
-			sArtists = append(sArtists, Artists[id])
-			continue
-		} else if strings.Contains(strings.ToLower(Artists[id].FirstAlbum), searchWord) {
-			sArtists = append(sArtists, Artists[id])
-			continue
-		} else if strings.Contains(strconv.Itoa(Artists[id].CreationDate), searchWord) {
-			sArtists = append(sArtists, Artists[id])
-			continue
+	if Request.Method == "GET" {
+		var sArtists []Artist
+		temp, err := template.ParseFiles("templates/index.html")
+		if err != nil {
+			http.Error(Writer, "500: internal server error", http.StatusInternalServerError)
+			return
 		}
 
-		for membeId := range Artists[id].Members {
-			if strings.Contains(strings.ToLower(Artists[id].Members[membeId]), searchWord) {
+		Request.ParseForm()
+
+		searchWord := strings.ToLower(Request.FormValue("search"))
+
+		if Location.Index == nil {
+			FetchLocations()
+		}
+
+		for id := range Artists {
+			if strings.Contains(strings.ToLower(Artists[id].Name), searchWord) {
 				sArtists = append(sArtists, Artists[id])
-				break
+				continue
+			} else if strings.Contains(strings.ToLower(Artists[id].FirstAlbum), searchWord) {
+				sArtists = append(sArtists, Artists[id])
+				continue
+			} else if strings.Contains(strconv.Itoa(Artists[id].CreationDate), searchWord) {
+				sArtists = append(sArtists, Artists[id])
+				continue
+			}
+
+			for membeId := range Artists[id].Members {
+				if strings.Contains(strings.ToLower(Artists[id].Members[membeId]), searchWord) {
+					sArtists = append(sArtists, Artists[id])
+					break
+				}
+			}
+
+			for locationId := range Location.Index[id].Locations {
+				if strings.Contains(strings.ToLower(Location.Index[id].Locations[locationId]), searchWord) {
+					sArtists = append(sArtists, Artists[id])
+					break
+				}
 			}
 		}
+		temp.Execute(Writer, sArtists)
 
-		for locationId := range Location.Index[id].Locations {
-			if strings.Contains(strings.ToLower(Location.Index[id].Locations[locationId]), searchWord) {
-				sArtists = append(sArtists, Artists[id])
-				break
-			}
-		}
+	} else {
+		http.Error(Writer, "400: bad request.", http.StatusBadRequest)
 	}
-	temp.Execute(Writer, sArtists)
 }
-
-// func renderErrorPage(w http.ResponseWriter, errMsg string, errCode int) {
-// 	tmpl, tempErr := template.ParseFiles("templates/error.html")
-// 	if tempErr != nil {
-// 		http.Error(w, tempErr.Error(), http.StatusNotFound)
-// 		return
-// 	}
-// 	Result = Results{Err: errMsg, ErrNumber: fmt.Sprintf("%d", errCode)}
-// 	w.WriteHeader(errCode)
-// 	tmpl.Execute(w, Result)
-// }

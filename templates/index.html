@@ -11,12 +11,15 @@
 
 <body>
     <span>Groupie Tracker</span><br>
+    
     <div class="search-container">
         <form action="/search" method="post">
-          <input type="text" placeholder="Search.." name="search">
-          <button type="submit">Submit</button>
+            <input type="text" placeholder="Search.." name="search" id="searchInput" oninput="showSuggestions(this.value)">
+            <datalist id="suggestionsList"></datalist>
+            <button type="submit">Submit</button>
         </form>
     </div>
+    
     <ol class="articles">
         {{ range . }}      
         <li class="articles__article" style="--animation-order:1">

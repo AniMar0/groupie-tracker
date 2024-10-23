@@ -9,3 +9,14 @@ func Atoi(num string) int {
 	}
 	return digit
 }
+
+// func renderErrorPage(w http.ResponseWriter, errMsg string, errCode int) {
+// 	tmpl, tempErr := template.ParseFiles("templates/error.html")
+// 	if tempErr != nil {
+// 		http.Error(w, tempErr.Error(), http.StatusNotFound)
+// 		return
+// 	}
+// 	Result = Results{Err: errMsg, ErrNumber: fmt.Sprintf("%d", errCode)}
+// 	w.WriteHeader(errCode)
+// 	tmpl.Execute(w, Result)
+// }
