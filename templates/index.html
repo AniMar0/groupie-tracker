@@ -13,10 +13,11 @@
     <span>Groupie Tracker</span><br>
     
     <div class="search-container">
-        <form action="/search" method="post">
-            <input type="text" placeholder="Search.." name="search" id="searchInput" oninput="showSuggestions(this.value)">
-            <datalist id="suggestionsList"></datalist>
-            <button type="submit">Submit</button>
+        <form autocomplete="off" action="/search" method="post">
+            <div>
+              <input type="text" id="input" name="search" placeholder="Type a name here..." />
+            </div>
+            <ul class="list"></ul>
         </form>
     </div>
     
@@ -33,6 +34,7 @@
         </li>
         {{end}}
     </ol>
+    <script src="/js/script.js"></script>
 </body>
 
 </html>

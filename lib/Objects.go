@@ -132,3 +132,18 @@ func (a *Artist) Search(searchWord string) *Artist {
 
 	return nil
 }
+
+func (a *Artist) GetData() []string {
+	var data []string
+	data = append(data, a.Name+" - artist/band", (a.FirstAlbum)+" - First Album", strconv.Itoa(a.CreationDate)+" - Creation Date")
+
+	for membeId := range a.Members {
+		data = append(data, a.Members[membeId]+" - member")
+	}
+
+	for locationId := range Location.Index[a.ID-1].Locations {
+		data = append(data, Location.Index[a.ID-1].Locations[locationId]+" - Location")
+	}
+
+	return data
+}
