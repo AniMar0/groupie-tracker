@@ -2,7 +2,6 @@ package TRC
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 	"text/template"
@@ -15,69 +14,68 @@ var Data []string
 func (serv *Server) Run() {
 	FetchArtists()
 
-	http.HandleFunc("/css/", serv.cssHandler)
-	http.HandleFunc("/js/", serv.jsHandler)
+	http.HandleFunc("/css/", serv.staticFileHandler)
+	http.HandleFunc("/js/", serv.staticFileHandler)
 	http.HandleFunc("/artist/", serv.ArtistHandler)
 	http.HandleFunc("/search", serv.SearchHandler)
-	http.HandleFunc("/data", serv.datahandler)
+	http.HandleFunc("/data", serv.dataHandler)
 	http.HandleFunc("/", serv.homeHandler)
 
 	http.ListenAndServe(":8080", nil)
 }
 
 func (serv *Server) homeHandler(Writer http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodGet || Request.URL.Path != "/" {
+		renderErrorPage(Writer, "Not Found", http.StatusNotFound)
+		return
+	}
 	temp, err := template.ParseFiles("templates/index.html")
 	if err != nil {
-		log.Fatal("err ParseFiles index")
+		renderErrorPage(Writer, "Internal Server Error", http.StatusInternalServerError)
 	}
 
-	temp.Execute(Writer, Artists)
+	if err := temp.Execute(Writer, Artists); err != nil {
+		renderErrorPage(Writer, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
-func (serv *Server) cssHandler(Writer http.ResponseWriter, Request *http.Request) {
-	if Request.Method != http.MethodGet || Request.URL.Path == "/css/" {
-		// renderErrorPage(w, "Bad Request", http.StatusBadRequest)
+func (serv *Server) staticFileHandler(Writer http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodGet || Request.URL.Path == "/css/" || Request.URL.Path == "/js/" {
+		renderErrorPage(Writer, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	fileCssServe := http.FileServer(http.Dir("css"))
-	http.StripPrefix("/css/", fileCssServe).ServeHTTP(Writer, Request)
-}
-
-func (serv *Server) jsHandler(Writer http.ResponseWriter, Request *http.Request) {
-	if Request.Method != http.MethodGet || Request.URL.Path == "/css/" {
-		// renderErrorPage(w, "Bad Request", http.StatusBadRequest)
-		return
+	if strings.HasPrefix(Request.URL.Path, "/css/") {
+		fileCssServe := http.FileServer(http.Dir("css"))
+		http.StripPrefix("/css/", fileCssServe).ServeHTTP(Writer, Request)
+	} else if strings.HasPrefix(Request.URL.Path, "/js/") {
+		fileJsServe := http.FileServer(http.Dir("js"))
+		http.StripPrefix("/js/", fileJsServe).ServeHTTP(Writer, Request)
 	}
-
-	fileCssServe := http.FileServer(http.Dir("js"))
-	http.StripPrefix("/js/", fileCssServe).ServeHTTP(Writer, Request)
 }
 
 func (serv *Server) ArtistHandler(Writer http.ResponseWriter, Request *http.Request) {
-	if Request.Method == "GET" {
+	if Request.URL.Path == "/artist/" || Request.Method != "GET" {
+		renderErrorPage(Writer, "bad request.", http.StatusBadRequest)
+		return
+	}
 
-		t, err := template.ParseFiles("templates/profile.html")
-		if err != nil {
-			http.Error(Writer, "500: internal server error", http.StatusInternalServerError)
-			return
-		}
+	t, err := template.ParseFiles("templates/profile.html")
+	if err != nil {
+		renderErrorPage(Writer, "internal server error", http.StatusInternalServerError)
+		return
+	}
 
-		ID := string(Request.URL.Path)[len("/artist/"):]
-		if Atoi(ID) > len(Artists) {
-			// err
-			return
-		}
-		Artists[Atoi(ID)-1].FetchOtherData()
+	ID := string(Request.URL.Path)[len("/artist/"):]
+	if Atoi(ID) > len(Artists) || Atoi(ID) < 1 {
+		renderErrorPage(Writer, "Not Found", http.StatusNotFound)
+		return
+	}
+	Artists[Atoi(ID)-1].FetchOtherData()
 
-		if err := t.Execute(Writer, Artists[Atoi(ID)-1]); err != nil {
-			t, _ = template.ParseFiles("templates/error.html")
-			t.Execute(Writer, http.StatusNotFound)
-			return
-		}
-
-	} else {
-		http.Error(Writer, "400: bad request.", http.StatusBadRequest)
+	if err := t.Execute(Writer, Artists[Atoi(ID)-1]); err != nil {
+		renderErrorPage(Writer, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -86,51 +84,51 @@ func (serv *Server) SearchHandler(Writer http.ResponseWriter, Request *http.Requ
 		var sArtists []Artist
 		temp, err := template.ParseFiles("templates/index.html")
 		if err != nil {
-			http.Error(Writer, "500: internal server error", http.StatusInternalServerError)
+			renderErrorPage(Writer, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		Request.ParseForm()
-
-		searchWord := strings.ReplaceAll(Request.FormValue("search"), " - artist/band", "")
-		searchWord = strings.ReplaceAll(searchWord, " - member", "")
-		searchWord = strings.ReplaceAll(searchWord, " - First Album", "")
-		searchWord = strings.ReplaceAll(searchWord, " - Creation Date", "")
-		searchWord = strings.ReplaceAll(searchWord, " - Location", "")
 
 		if Location.Index == nil {
 			FetchLocations()
 		}
 
 		for id := range Artists {
-			if artist := Artists[id].Search(strings.ToLower(searchWord)); artist != nil {
+			if artist := Artists[id].Search(strings.ToLower(ReplaceAll(Request.FormValue("search")))); artist != nil {
 				sArtists = append(sArtists, *artist)
 			}
 		}
 
-		temp.Execute(Writer, sArtists)
+		if err := temp.Execute(Writer, sArtists); err != nil {
+			renderErrorPage(Writer, "Internal Server Error", http.StatusInternalServerError)
+		}
 
 	} else {
-		http.Error(Writer, "400: bad request.", http.StatusBadRequest)
+		renderErrorPage(Writer, "bad request.", http.StatusBadRequest)
 	}
 }
 
-func (serv *Server) datahandler(w http.ResponseWriter, r *http.Request) {
-	if Location.Index == nil {
-		FetchLocations()
-	}
-
-	if Data == nil {
-		for id := range Artists {
-			Data = append(Data, Artists[id].GetData()...)
+func (serv *Server) dataHandler(Writer http.ResponseWriter, Request *http.Request) {
+	if Request.Method == "POST" {
+		if Location.Index == nil {
+			FetchLocations()
 		}
-	}
 
-	jsonData, err := json.Marshal(Data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		if Data == nil {
+			for id := range Artists {
+				Data = append(Data, Artists[id].GetData()...)
+			}
+		}
+
+		jsonData, err := json.Marshal(Data)
+		if err != nil {
+			http.Error(Writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Writer.Header().Set("Content-Type", "application/json")
+		Writer.Write(jsonData)
+	} else {
+		renderErrorPage(Writer, "bad request.", http.StatusBadRequest)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonData)
 }
