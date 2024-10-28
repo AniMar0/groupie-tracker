@@ -9,7 +9,8 @@ import (
 
 // Artists stores all artist data fetched from the API
 var (
-	Artists  []Artist
+	Alle All
+	// Artists  []Artist
 	Location LocationsData
 )
 
@@ -29,7 +30,7 @@ func FetchArtists() {
 	}
 
 	// Unmarshal the JSON data into the Artists slice
-	if err := json.Unmarshal(data, &Artists); err != nil {
+	if err := json.Unmarshal(data, &Alle.Artists); err != nil {
 		fmt.Println("Error unmarshalling artists data:", err)
 	}
 }
@@ -52,4 +53,6 @@ func FetchLocations() {
 	if err := json.Unmarshal(data, &Location); err != nil {
 		fmt.Println("Error unmarshalling artists data:", err)
 	}
+
+
 }

@@ -29,13 +29,13 @@
                 {{end}}
                 {{range .Local}}
                      <option value="{{.}}">{{.}} - Locations</option>
-                {{end}}
+                  {{end}}
             </datalist>
         </form>
     </div>
     
     <ol class="articles">
-        {{ range .Artists}}      
+        {{ range .SArtists}}      
         <li class="articles__article" style="--animation-order:1">
      
             <a href=/artist/{{.ID}} class="articles__link" >

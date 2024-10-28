@@ -25,13 +25,20 @@ type Artist struct {
 	Relations    Relations
 }
 
+type All struct {
+	Artists  []Artist
+	SArtists []Artist
+	Local  []string
+}
+
 type LocationsData struct {
 	Index []Locations `json:"index"`
 }
 
 // OtherInfo holds extra details like locations and dates for each artist
 type Locations struct {
-	Locations []string `json:"locations"`
+	Locations     []string `json:"locations"`
+	SortLocations []string
 }
 
 type Dates struct {
@@ -146,4 +153,10 @@ func (a *Artist) GetData() []string {
 	}
 
 	return data
+}
+
+func Append() {
+	for v := range Alle.Artists {
+		Alle.Artists[v].Locations.Locations = Location.Index[v].Locations
+	}
 }
