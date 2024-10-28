@@ -132,7 +132,7 @@ func (a *Artist) Search(searchWord string) *Artist {
 	}
 
 	for locationId := range Location.Index[a.ID-1].Locations {
-		if strings.Contains(strings.ToLower(Location.Index[a.ID-1].Locations[locationId]), searchWord) {
+		if strings.Contains(strings.ToLower(Location.Index[	a.ID-1].Locations[locationId]), searchWord) {
 			return a
 		}
 	}

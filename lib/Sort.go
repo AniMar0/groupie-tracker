@@ -51,7 +51,7 @@ func merge(left, right []string) []string {
 		}
 		i++
 	}
-	
+
 	for j < len(right) {
 		if len(result) == 0 || result[len(result)-1] != right[j] {
 			result = append(result, right[j])

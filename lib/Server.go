@@ -20,6 +20,7 @@ func (serv *Server) Run() {
 	http.HandleFunc("/css/", serv.staticFileHandler)
 	http.HandleFunc("/artist/", serv.ArtistHandler)
 	http.HandleFunc("/search", serv.SearchHandler)
+	http.HandleFunc("/filter", serv.filterHandler)
 	http.HandleFunc("/", serv.homeHandler)
 
 	http.ListenAndServe(":8082", nil)
@@ -90,6 +91,34 @@ func (serv *Server) SearchHandler(Writer http.ResponseWriter, Request *http.Requ
 		for id := range Alle.Artists {
 			if artist := Alle.Artists[id].Search(strings.ToLower(ReplaceAll(Request.FormValue("search")))); artist != nil {
 				Alle.SArtists = append(Alle.SArtists, *artist)
+			}
+		}
+
+		if err := temp.Execute(Writer, Alle); err != nil {
+			renderErrorPage(Writer, "Internal Server Error", http.StatusInternalServerError)
+		}
+
+	} else {
+		renderErrorPage(Writer, "bad request.", http.StatusBadRequest)
+	}
+}
+
+func (serv *Server) filterHandler(Writer http.ResponseWriter, Request *http.Request) {
+	Alle.SArtists = nil
+	if Request.Method == "POST" {
+		temp, err := template.ParseFiles("templates/search.html")
+		if err != nil {
+			renderErrorPage(Writer, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		Request.ParseForm()
+
+		// startYear := Atoi(Request.FormValue("year-range-start"))
+		// endYear := Atoi(Request.FormValue("year-range-start"))
+		for id := range Alle.Artists {
+			if Alle.Artists[id].CreationDate >= 1999 && Alle.Artists[id].CreationDate <= 2002 {
+				Alle.SArtists = append(Alle.SArtists, Alle.Artists[id])
 			}
 		}
 

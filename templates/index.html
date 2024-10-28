@@ -11,6 +11,21 @@
 
 <body>
     <span>Groupie Tracker</span><br>
+
+    <form action="/filter"  method="post">
+        <div>
+            <label for="year-range-start"></label>
+            <input type="range" id="year-range-start" name="year-range-start" min="1950" max="2024" value="2002" oninput="this.nextElementSibling.value = this.value">
+            <output>2002</output> 
+        </div>
+        <div>
+            <label for="year-range-end"></label>
+            <input type="range" id="year-range-end" name="year-range-end" min="1950" max="2024" value="2002" oninput="this.nextElementSibling.value = this.value">
+            <output>2002</output> 
+        </div>
+
+    </form>
+
     
     <div class="search-container">
         <form autocomplete="off" action="/search" method="post">
